@@ -19,6 +19,11 @@ docker compose up --build -d
 - 工时切段：`/m5_calculate`、`/api/m5_calculate`
 - 薪资对账：`/m6_reconcile`、`/api/m6_reconcile`
 - 周期归档：`/m7_archive`、`/api/m7_archive`
+- 停线待命：`/m8_stoppage`、`/api/m8_stoppage`（回执补录与重算：`/api/stoppage/file`，回执台账：`/api/stoppage/receipts`）
+
+## 停线待命裁决
+
+设备故障留岗等待不产出，责任未确认前先按**无薪中断**挂账；停线回执确认企业责任后改判**可付待命工时**，旧工时与工资随整批重算失效（历史批次仍留档）。同号回执重跑幂等跳过、不重复累计；同号内容冲突返回409且不覆盖原件。归档与重算同事务，重算失败整体回滚，保留旧版结果与原始回执。M4 每个班次片段都显示停线依据、回执号与可付分钟；M6 停线分钟守恒不平则 `balanced=false`，M7 禁止封存导出。
 
 ## 核心规则
 
@@ -31,7 +36,7 @@ docker compose exec -T app pytest -q
 docker compose config --quiet
 ```
 
-原始样例在 `sample_data/`。测试在 `tests/`。封存文件是单份CSV，含运行清单、计算证据、隔离原因与对账。复核需提交当前版本，陈旧复核返回409。
+原始样例在 `sample_data/`（停线回执样例为 `stoppage.csv`）。测试在 `tests/`。封存文件是单份CSV，含运行清单、计算证据、停线回执原件、隔离原因与对账。复核需提交当前版本，陈旧复核返回409。
 
 ## 数据与限制
 

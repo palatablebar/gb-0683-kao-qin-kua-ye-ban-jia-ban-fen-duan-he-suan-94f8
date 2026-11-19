@@ -1,0 +1,6 @@
+receipt_id,employee,shift_day,stop_start,stop_end,reason_code,responsibility,standby_rate,note
+R2026100101,E001,2026-10-01,23:00,23:30,EQUIP_FAULT,employer,20,设备故障待修 企业责任
+R2026100102,E001,2026-10-01,03:00,03:30,POWER_OUTAGE,employer,20,车间停电 企业责任
+R2026100103,E002,2026-10-01,04:00,04:45,EQUIP_FAULT,pending,,责任未确认 先按无薪中断挂账
+R2026100104,E003,2026-10-01,05:00,05:30,WORKER_CAUSE,worker,20,员工原因停线 不付待命
+R2026100105,E999,2026-10-01,03:00,03:30,EQUIP_FAULT,employer,20,无对应班次 应隔离

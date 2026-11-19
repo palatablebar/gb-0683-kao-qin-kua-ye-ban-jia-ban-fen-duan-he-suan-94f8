@@ -13,6 +13,7 @@
 | M5 工时切段 | 查看并复算工时切段 | `/api/m5_calculate` | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py` |
 | M6 薪资对账 | 查看并复算薪资对账 | `/api/m6_reconcile` | `app/modules/m6_reconcile/compare.py` | `tests/test_reconcile.py` |
 | M7 周期归档 | 查看并复算周期归档 | `/api/m7_archive` | `app/modules/m7_archive/export_out.py` | `tests/test_archive.py` |
+| M8 停线待命 | 回执补录、待命裁决与整批重算 | `/api/m8_stoppage`、`/api/stoppage/file` | `app/modules/m8_stoppage/rules.py` | `tests/test_stoppage.py` |
 
 ## 陷阱登记
 
@@ -31,10 +32,16 @@
 | TRAP-26 | 旧版本复核 | 覆盖新结论 | 事务条件更新 | `app/store.py` | `tests/test_archive.py::test_stale_review` |
 | TRAP-23 | 休息与跨夜端点 | 重复或漏计 | 半开区间切片 | `app/modules/m4_segments/rules.py` | `tests/test_segments.py::test_break_removed` |
 | TRAP-19 | 假日与周末重叠 | 费率相加 | 假日优先 | `app/modules/m5_calculate/rules.py` | `tests/test_calculate.py::test_holiday_overrides_rest` |
+| TRAP-30 | 责任未确认停线 | 直接按正常工时发薪 | 无薪中断挂账，回执补录后重算 | `app/reasons.py` | `tests/test_stoppage.py::test_pending_responsibility_is_unpaid` |
+| TRAP-31 | 同号回执重跑 | 等待分钟重复累计 | 业务键去重+幂等跳过 | `app/modules/m8_stoppage/rules.py` | `tests/test_stoppage.py::test_same_receipt_rerun_is_idempotent` |
+| TRAP-32 | 停线跨午夜钟点 | 03:00 误判到班次前 | 早于班次起点顺延次日 | `app/modules/m8_stoppage/rules.py` | `tests/test_stoppage.py::test_four_events_adjudicated_and_unknown_shift_quarantined` |
+| TRAP-33 | 待命挤占正常阈值 | 8小时阈值被待命吃掉 | 待命/中断不累计 normal_used | `app/modules/m5_calculate/rules.py` | `tests/test_stoppage.py::test_standby_does_not_consume_daily_regular_threshold` |
+| TRAP-34 | 重算失败覆盖旧账 | 半成品成为最新批次 | 同事务回滚+latest指回旧批次 | `app/store.py` | `tests/test_stoppage.py::test_recalc_failure_rolls_back_and_keeps_old_run` |
+| TRAP-35 | 停线分钟无守恒 | 无依据片段静默累计 | 事件分钟=待命+中断且强制挂回执号 | `app/modules/m6_reconcile/compare.py` | `tests/test_stoppage.py::test_reconcile_stoppage_minute_conservation` |
 
 ## 对账规则
 
-输入行数=采纳+隔离+空行+重复表头+完全重复；业务总数与计算证据独立求和。隔离行保留来源行、ID、原因码与原值。
+输入行数=采纳+隔离+空行+重复表头+完全重复；业务总数与计算证据独立求和。隔离行保留来源行、ID、原因码与原值。停线回执是独立台账，其隔离不计入打卡行数守恒，而由停线分钟守恒（事件分钟=可付待命+无薪中断、片段强制挂回执号）单独校验；两类守恒都平才允许封存。
 
 ## 已知不覆盖
 

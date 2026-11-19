@@ -13,10 +13,15 @@ def run(content,parameters=None,stage=7):
     params=parameters or {}
     if not isinstance(params,dict):raise DomainError('PARAMETERS','参数必须是对象')
     start=time.monotonic();state=None
+    target=min(stage,len(MODULES))
     for n,entry in enumerate(MODULES,1):
-        if n>stage:break
+        if n>target:break
         fn=importlib.import_module('app.modules.'+entry[0]+'.service').execute
         state=fn(content,params) if n==1 else fn(state)
+        # 停线待命裁决必须先于工时切段（M4），切段与计薪直接引用裁决结果
+        if entry[0]=='m3_versions' and target>=4:
+            state['stoppage_receipts']=list(params.get('_stoppage_receipts',[]))
+            state=importlib.import_module('app.modules.m8_stoppage.service').execute(state)
     # Decimal values are serialized as strings before any storage or response.
     state=json.loads(json.dumps(state,default=str,ensure_ascii=False))
     state['run_id']=identity(content,params);state['manifest']=manifest(content,params,time.monotonic()-start)
